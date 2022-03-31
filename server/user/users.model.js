@@ -1,0 +1,96 @@
+const pool = require("../db");
+  exports.insert = (req, res) => {
+        const usersData= req.body;
+       // console.log(usersData);
+        ;(async () => {
+        // note: we don't try/catch this because if connecting throws an exception
+        // we don't need to dispose of the client (it will be undefined)
+        const client = await pool.connect()
+        try {
+            await client.query('BEGIN');
+            const queryText = 'INSERT INTO usertbl(email) VALUES($1) returning id';
+            const add = await client.query(queryText, [usersData.email]);
+           
+            await client.query('COMMIT');
+            res.status(201).send(add);
+        } catch (e) {
+            await client.query('ROLLBACK')
+            console.log(e);
+            res.status(400).send(e);
+        } finally {
+            client.release()
+        }
+        })().catch(e =>  res.status(400).send(e))
+  };
+  
+  exports.list = (req, res) => {
+    ;(async () => {
+        // note: we don't try/catch this because if connecting throws an exception
+        // we don't need to dispose of the client (it will be undefined)
+        const client = await pool.connect()
+        try {
+         
+            const queryText = 'SELECT * from usertbl order by id DESC'
+            const list = await client.query(queryText)
+            res.status(201).send(list.rows);
+           
+        } catch (e) {
+          
+           // throw e
+            res.status(400).send(e);
+        } finally {
+            client.release()
+        }
+        })().catch(e =>  res.status(400).send(e.stack))
+    
+  };
+ 
+  exports.patch = (req, res) => {
+    const usersData= req.body;
+    const id= req.params.userId;
+    ;(async () => {
+        // note: we don't try/catch this because if connecting throws an exception
+        // we don't need to dispose of the client (it will be undefined)
+        const client = await pool.connect()
+        try {
+            await client.query('BEGIN')
+            const queryText = 'UPDATE usertbl set email = $1 WHERE  id=$2'
+            const updated = await client.query(queryText, [usersData.email,id])
+           
+            await client.query('COMMIT')
+            res.status(201).send(updated);
+        } catch (e) {
+            await client.query('ROLLBACK')
+            //throw e
+            res.status(400).send(e);
+        } finally {
+            client.release()
+        }
+        })().catch(e => res.status(400).send(e.stack))
+  
+  };
+ 
+  exports.removeById = (req, res) => {
+      // note: we don't try/catch this because if connecting throws an exception
+        // we don't need to dispose of the client (it will be undefined)
+        const id= req.params.userId;
+        ;(async () => {
+        const client = await pool.connect()
+        try {
+            await client.query('BEGIN')
+            const queryText = 'DELETE FROM usertbl  WHERE  id=$1'
+            const deleted = await client.query(queryText,[id])
+           
+            await client.query('COMMIT')
+            res.status(201).send(deleted);
+        } catch (e) {
+            await client.query('ROLLBACK')
+           // throw e
+            res.status(400).send(e);
+        } finally {
+            client.release()
+        }
+        })().catch(e => res.status(400).send(e.stack))
+  };
+  
+  
